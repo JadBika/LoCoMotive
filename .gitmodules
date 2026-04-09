@@ -1,0 +1,3 @@
+[submodule "BC/visualnav-transformer"]
+	path = BC/visualnav-transformer
+	url = https://github.com/robodhruv/visualnav-transformer.git
