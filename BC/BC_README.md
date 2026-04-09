@@ -16,3 +16,14 @@
 ## Notes
 - Robot: `ford-pinto` (`locobot_wx250s`)
 - Expected key topics: `/usb_cam/image_raw`, `/odom`, `/locobot/mobile_base/cmd_vel`
+
+## ROS2 Adapter (ford-pinto)
+1. Run robot connectivity check:
+   - `./scripts/01_robot_check.sh`
+2. Build + launch ROS2 adapter nodes:
+   - `./scripts/02_run_pretrained_ros2.sh`
+
+### Files
+- `ros2_adapter/ros2_adapter/vint_infer_node.py`: camera/odom subscriber and waypoint publisher (stub inference).
+- `ros2_adapter/ros2_adapter/pd_controller_node.py`: waypoint to `/locobot/mobile_base/cmd_vel`.
+- `ros2_adapter/launch/vint_nav.launch.py`: starts both nodes.
