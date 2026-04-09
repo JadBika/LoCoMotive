@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+import math
+
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Float32MultiArray
+
+from .topic_config import WAYPOINT_TOPIC, CMD_VEL_TOPIC
+
+
+class PdControllerNode(Node):
+    def __init__(self) -> None:
+        super().__init__("pd_controller_node")
+        self.declare_parameter("k_v", 0.6)
+        self.declare_parameter("k_w", 1.2)
+        self.declare_parameter("max_v", 0.15)
+        self.declare_parameter("max_w", 0.6)
+
+        self.k_v = self.get_parameter("k_v").get_parameter_value().double_value
+        self.k_w = self.get_parameter("k_w").get_parameter_value().double_value
+        self.max_v = self.get_parameter("max_v").get_parameter_value().double_value
+        self.max_w = self.get_parameter("max_w").get_parameter_value().double_value
+
+        self.cmd_pub = self.create_publisher(Twist, CMD_VEL_TOPIC, 10)
+        self.create_subscription(Float32MultiArray, WAYPOINT_TOPIC, self._waypoint_cb, 10)
+
+        self.get_logger().info(
+            f"Started pd_controller_node out={CMD_VEL_TOPIC} k_v={self.k_v} k_w={self.k_w}"
+        )
+
+    def _clamp(self, val: float, lim: float) -> float:
+        return max(-lim, min(lim, val))
+
+    def _waypoint_cb(self, msg: Float32MultiArray) -> None:
+        if len(msg.data) < 2:
+            self.get_logger().warning("Waypoint must contain at least 2 values [x, y]")
+            return
+
+        x = float(msg.data[0])
+        y = float(msg.data[1])
+
+        heading = math.atan2(y, max(1e-6, x))
+
+        v = self._clamp(self.k_v * x, self.max_v)
+        w = self._clamp(self.k_w * heading, self.max_w)
+
+        cmd = Twist()
+        cmd.linear.x = v
+        cmd.angular.z = w
+        self.cmd_pub.publish(cmd)
+
+
+def main() -> None:
+    rclpy.init()
+    node = PdControllerNode()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stop = Twist()
+        node.cmd_pub.publish(stop)
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
