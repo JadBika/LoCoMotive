@@ -18,10 +18,17 @@
 - Expected key topics: `/usb_cam/image_raw`, `/odom`, `/locobot/mobile_base/cmd_vel`
 
 ## ROS2 Adapter (ford-pinto)
+0. Run preflight checks:
+   - `./scripts/00_preflight_ros2.sh`
 1. Run robot connectivity check:
    - `./scripts/01_robot_check.sh`
 2. Build + launch ROS2 adapter nodes:
    - `./scripts/02_run_pretrained_ros2.sh`
+
+### Topic Overrides
+- You can override topic names without editing code:
+  - `CAMERA_TOPIC=/your/camera ODOM_TOPIC=/your/odom CMD_VEL_TOPIC=/your/cmd_vel ./scripts/00_preflight_ros2.sh`
+  - `CAMERA_TOPIC=/your/camera ODOM_TOPIC=/your/odom CMD_VEL_TOPIC=/your/cmd_vel ./scripts/02_run_pretrained_ros2.sh`
 
 ### Files
 - `ros2_adapter/ros2_adapter/vint_infer_node.py`: camera/odom subscriber and waypoint publisher (stub inference).

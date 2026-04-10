@@ -11,8 +11,17 @@
    - `ford-pinto -> ROS_DOMAIN_ID=20`
 3. Export env:
    - `export ROS_DOMAIN_ID=20`
+   - `export RMW_IMPLEMENTATION=rmw_fastrtps_cpp`
+   - optional: `export ROS_DISCOVERY_SERVER=192.168.50.194:11811`
 4. Confirm topics:
    - `ros2 topic list`
+
+## Preflight
+1. Run:
+   - `cd BC`
+   - `./scripts/00_preflight_ros2.sh`
+2. If topic names differ, rerun with overrides:
+   - `CAMERA_TOPIC=<camera> ODOM_TOPIC=<odom> CMD_VEL_TOPIC=<cmd_vel> ./scripts/00_preflight_ros2.sh`
 
 ## Connectivity Test
 1. Run:
@@ -24,6 +33,8 @@
 1. Run:
    - `cd BC`
    - `./scripts/02_run_pretrained_ros2.sh`
+   - if topic names differ:
+     `CAMERA_TOPIC=<camera> ODOM_TOPIC=<odom> CMD_VEL_TOPIC=<cmd_vel> ./scripts/02_run_pretrained_ros2.sh`
 2. Confirm no launch/build errors.
 
 ## Trial Logging (each run)
