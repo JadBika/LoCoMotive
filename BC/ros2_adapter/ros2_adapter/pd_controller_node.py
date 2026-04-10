@@ -16,17 +16,24 @@ class PdControllerNode(Node):
         self.declare_parameter("k_w", 1.2)
         self.declare_parameter("max_v", 0.15)
         self.declare_parameter("max_w", 0.6)
+        self.declare_parameter("waypoint_topic", WAYPOINT_TOPIC)
+        self.declare_parameter("cmd_vel_topic", CMD_VEL_TOPIC)
 
         self.k_v = self.get_parameter("k_v").get_parameter_value().double_value
         self.k_w = self.get_parameter("k_w").get_parameter_value().double_value
         self.max_v = self.get_parameter("max_v").get_parameter_value().double_value
         self.max_w = self.get_parameter("max_w").get_parameter_value().double_value
+        self.waypoint_topic = (
+            self.get_parameter("waypoint_topic").get_parameter_value().string_value
+        )
+        self.cmd_vel_topic = self.get_parameter("cmd_vel_topic").get_parameter_value().string_value
 
-        self.cmd_pub = self.create_publisher(Twist, CMD_VEL_TOPIC, 10)
-        self.create_subscription(Float32MultiArray, WAYPOINT_TOPIC, self._waypoint_cb, 10)
+        self.cmd_pub = self.create_publisher(Twist, self.cmd_vel_topic, 10)
+        self.create_subscription(Float32MultiArray, self.waypoint_topic, self._waypoint_cb, 10)
 
         self.get_logger().info(
-            f"Started pd_controller_node out={CMD_VEL_TOPIC} k_v={self.k_v} k_w={self.k_w}"
+            f"Started pd_controller_node out={self.cmd_vel_topic} waypoint={self.waypoint_topic} "
+            f"k_v={self.k_v} k_w={self.k_w}"
         )
 
     def _clamp(self, val: float, lim: float) -> float:

@@ -20,14 +20,21 @@ class VintInferNode(Node):
         self.declare_parameter("checkpoint_path", "")
         self.declare_parameter("vint_repo_root", "")
         self.declare_parameter("device", "cpu")
+        self.declare_parameter("camera_topic", CAMERA_TOPIC)
+        self.declare_parameter("odom_topic", ODOM_TOPIC)
+        self.declare_parameter("waypoint_topic", WAYPOINT_TOPIC)
 
         self.last_image = None
         self.last_odom = None
         self.warned_stub = False
 
-        self.create_subscription(Image, CAMERA_TOPIC, self._image_cb, 10)
-        self.create_subscription(Odometry, ODOM_TOPIC, self._odom_cb, 10)
-        self.waypoint_pub = self.create_publisher(Float32MultiArray, WAYPOINT_TOPIC, 10)
+        self.camera_topic = self.get_parameter("camera_topic").get_parameter_value().string_value
+        self.odom_topic = self.get_parameter("odom_topic").get_parameter_value().string_value
+        self.waypoint_topic = self.get_parameter("waypoint_topic").get_parameter_value().string_value
+
+        self.create_subscription(Image, self.camera_topic, self._image_cb, 10)
+        self.create_subscription(Odometry, self.odom_topic, self._odom_cb, 10)
+        self.waypoint_pub = self.create_publisher(Float32MultiArray, self.waypoint_topic, 10)
         self.timer = self.create_timer(0.25, self._tick)  # 4 Hz
 
         self.model_name = self.get_parameter("model_name").get_parameter_value().string_value
@@ -43,7 +50,8 @@ class VintInferNode(Node):
             f"Started vint_infer_node model={self.model_name} "
             f"checkpoint={self.checkpoint_path or '[not set]'} "
             f"repo_root={self.vint_repo_root or '[not set]'} "
-            f"ready={self.model_ready}"
+            f"camera_topic={self.camera_topic} odom_topic={self.odom_topic} "
+            f"waypoint_topic={self.waypoint_topic} ready={self.model_ready}"
         )
 
     def _image_cb(self, msg: Image) -> None:
