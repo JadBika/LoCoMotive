@@ -9,6 +9,7 @@ diffusion_policy (NoMaD-only dep) at the top level.
 import json
 import os
 import sys
+import threading
 from collections import deque
 from pathlib import Path
 from typing import List, Optional
@@ -42,7 +43,7 @@ class VintInferNode(Node):
         self.declare_parameter("topomap_images_dir", "")
         self.declare_parameter("waypoint_index", 2)
         self.declare_parameter("close_threshold", 3)
-        self.declare_parameter("radius", 4)
+        self.declare_parameter("radius", 2)
 
         self.model_name = self.get_parameter("model_name").get_parameter_value().string_value
         self.device_str = self.get_parameter("device").get_parameter_value().string_value
@@ -64,6 +65,7 @@ class VintInferNode(Node):
         # inference state
         self.context_queue: deque = deque()
         self.context_size: Optional[int] = None
+        self.latest_image = None  # most recent camera frame; sampled into context at tick rate
         self.model = None
         self.model_params: Optional[dict] = None
         self.device = None
@@ -72,6 +74,11 @@ class VintInferNode(Node):
         self.goal_node = -1
         self.reached_goal = False
         self.warned_stub = False
+
+        # async inference: background thread updates _latest_wp; timer publishes it at 4 Hz
+        self._latest_wp: Optional[list] = None
+        self._infer_lock = threading.Lock()
+        self._infer_running = False
 
         best_effort_qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
@@ -99,11 +106,7 @@ class VintInferNode(Node):
 
     def _image_cb(self, msg: Image) -> None:
         try:
-            pil_img = self._msg_to_pil(msg)
-            if self.context_size is not None:
-                if len(self.context_queue) >= self.context_size + 1:
-                    self.context_queue.popleft()
-                self.context_queue.append(pil_img)
+            self.latest_image = self._msg_to_pil(msg)
         except Exception as exc:
             self.get_logger().warning(f"Image conversion failed: {exc}")
 
@@ -123,16 +126,40 @@ class VintInferNode(Node):
             self._publish_waypoint([0.6, 0.0, 0.0, 0.0])
             return
 
+        # Sample one frame per tick (4 Hz) so context matches model training rate
+        if self.latest_image is not None and self.context_size is not None:
+            if len(self.context_queue) >= self.context_size + 1:
+                self.context_queue.popleft()
+            self.context_queue.append(self.latest_image)
+
         if len(self.context_queue) <= self.context_size:
             return  # accumulating context
 
-        chosen_wp = self._run_inference()
-        if chosen_wp is not None:
-            self._publish_waypoint(chosen_wp.tolist())
-            self.get_logger().debug(
-                json.dumps({"waypoint": chosen_wp.tolist(),
-                            "closest_node": self.closest_node})
-            )
+        # Publish last known waypoint immediately (keeps robot moving at 4 Hz)
+        with self._infer_lock:
+            wp = self._latest_wp
+        if wp is not None:
+            self._publish_waypoint(wp)
+
+        # Fire a new inference in the background if one isn't already running
+        if not self._infer_running:
+            self._infer_running = True
+            context_snapshot = list(self.context_queue)
+            t = threading.Thread(target=self._infer_thread, args=(context_snapshot,), daemon=True)
+            t.start()
+
+    def _infer_thread(self, context_snapshot: list) -> None:
+        try:
+            chosen_wp = self._run_inference(context_snapshot)
+            if chosen_wp is not None:
+                with self._infer_lock:
+                    self._latest_wp = chosen_wp.tolist()
+                self.get_logger().debug(
+                    json.dumps({"waypoint": chosen_wp.tolist(),
+                                "closest_node": self.closest_node})
+                )
+        finally:
+            self._infer_running = False
 
     def _publish_waypoint(self, data: list) -> None:
         msg = Float32MultiArray()
@@ -141,7 +168,8 @@ class VintInferNode(Node):
 
     # ── ViNT inference ─────────────────────────────────────────────────────────
 
-    def _run_inference(self) -> Optional[np.ndarray]:
+    def _run_inference(self, context_list: list) -> Optional[np.ndarray]:
+        import time
         import torch
 
         params = self.model_params
@@ -150,31 +178,37 @@ class VintInferNode(Node):
 
         start = max(self.closest_node - self.radius, 0)
         end = min(self.closest_node + self.radius + 1, goal_node)
+        subgoals = self.topomap[start:end + 1]
 
-        context_list = list(self.context_queue)
-
-        distances = []
-        waypoints = []
+        t0 = time.monotonic()
         try:
             with torch.no_grad():
-                for sg_img in self.topomap[start:end + 1]:
-                    obs_tensor = self._transform_images(context_list, image_size).to(self.device)
-                    goal_tensor = self._transform_images([sg_img], image_size).to(self.device)
-                    dist, wp = self.model(obs_tensor, goal_tensor)
-                    distances.append(dist.item())
-                    waypoints.append(wp.squeeze(0).cpu().numpy())
+                # Compute observation tensor once for all subgoals
+                obs_tensor = self._transform_images(context_list, image_size).to(self.device)
+
+                # Batch all subgoal forward passes
+                goal_batch = torch.cat(
+                    [self._transform_images([sg], image_size) for sg in subgoals], dim=0
+                ).to(self.device)                          # [N, C, H, W]
+                obs_batch = obs_tensor.expand(len(subgoals), -1, -1, -1)  # [N, C*T, H, W]
+
+                dists, wps = self.model(obs_batch, goal_batch)
+                distances = dists.squeeze(-1).cpu().numpy()   # [N]
+                waypoints_arr = wps.cpu().numpy()             # [N, len_traj_pred, wp_dim]
         except Exception as exc:
             self.get_logger().error(f"Inference failed: {exc}")
             return None
 
-        distances = np.array(distances)
+        elapsed = time.monotonic() - t0
+        self.get_logger().debug(f"Inference: {len(subgoals)} nodes in {elapsed:.3f}s")
+
         min_idx = int(np.argmin(distances))
 
         if distances[min_idx] > self.close_threshold:
-            chosen_wp = waypoints[min_idx][self.waypoint_index]
+            chosen_wp = waypoints_arr[min_idx][self.waypoint_index]
             self.closest_node = start + min_idx
         else:
-            chosen_wp = waypoints[min(min_idx + 1, len(waypoints) - 1)][self.waypoint_index]
+            chosen_wp = waypoints_arr[min(min_idx + 1, len(waypoints_arr) - 1)][self.waypoint_index]
             self.closest_node = min(start + min_idx + 1, goal_node)
 
         self.reached_goal = (self.closest_node == goal_node)
@@ -232,7 +266,8 @@ class VintInferNode(Node):
                 model_paths = yaml.safe_load(f)
 
             cfg_rel = model_paths[self.model_name]["config_path"]
-            cfg_abs = Path(self.vint_repo_root) / cfg_rel
+            # config_path in models.yaml is relative to deployment/src/
+            cfg_abs = (Path(self.vint_repo_root) / "deployment" / "src" / cfg_rel).resolve()
             with open(cfg_abs) as f:
                 self.model_params = yaml.safe_load(f)
 
@@ -240,7 +275,7 @@ class VintInferNode(Node):
             self.device = torch.device(self.device_str)
 
             model = self._build_vint_model(self.model_params)
-            checkpoint = torch.load(self.checkpoint_path, map_location=self.device)
+            checkpoint = torch.load(self.checkpoint_path, map_location=self.device, weights_only=False)
             loaded = checkpoint["model"]
             try:
                 state_dict = loaded.module.state_dict()
