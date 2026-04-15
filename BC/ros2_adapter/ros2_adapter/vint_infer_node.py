@@ -16,6 +16,7 @@ from typing import List, Optional
 import numpy as np
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 from sensor_msgs.msg import Image
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32MultiArray
@@ -72,8 +73,13 @@ class VintInferNode(Node):
         self.reached_goal = False
         self.warned_stub = False
 
+        best_effort_qos = QoSProfile(
+            reliability=ReliabilityPolicy.BEST_EFFORT,
+            history=HistoryPolicy.KEEP_LAST,
+            depth=1,
+        )
         self.create_subscription(Image, self.camera_topic, self._image_cb, 10)
-        self.create_subscription(Odometry, self.odom_topic, self._odom_cb, 10)
+        self.create_subscription(Odometry, self.odom_topic, self._odom_cb, best_effort_qos)
         self.waypoint_pub = self.create_publisher(Float32MultiArray, self.waypoint_topic, 10)
         self.timer = self.create_timer(1.0 / _RATE, self._tick)
 
