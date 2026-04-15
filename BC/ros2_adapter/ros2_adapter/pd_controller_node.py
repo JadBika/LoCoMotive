@@ -12,10 +12,10 @@ from .topic_config import WAYPOINT_TOPIC, CMD_VEL_TOPIC
 class PdControllerNode(Node):
     def __init__(self) -> None:
         super().__init__("pd_controller_node")
-        self.declare_parameter("k_v", 0.6)
-        self.declare_parameter("k_w", 1.2)
-        self.declare_parameter("max_v", 0.15)
-        self.declare_parameter("max_w", 0.6)
+        self.declare_parameter("k_v", 7.0)
+        self.declare_parameter("k_w", 2.0)
+        self.declare_parameter("max_v", 0.46)
+        self.declare_parameter("max_w", 1.0)
         self.declare_parameter("waypoint_topic", WAYPOINT_TOPIC)
         self.declare_parameter("cmd_vel_topic", CMD_VEL_TOPIC)
 
@@ -30,6 +30,8 @@ class PdControllerNode(Node):
 
         self.cmd_pub = self.create_publisher(Twist, self.cmd_vel_topic, 10)
         self.create_subscription(Float32MultiArray, self.waypoint_topic, self._waypoint_cb, 10)
+        self._last_cmd = Twist()  # cached command, re-sent at 20 Hz
+        self.create_timer(1.0 / 50.0, self._publish_last_cmd)
 
         self.get_logger().info(
             f"Started pd_controller_node out={self.cmd_vel_topic} waypoint={self.waypoint_topic} "
@@ -52,10 +54,11 @@ class PdControllerNode(Node):
         v = self._clamp(self.k_v * x, self.max_v)
         w = self._clamp(self.k_w * heading, self.max_w)
 
-        cmd = Twist()
-        cmd.linear.x = v
-        cmd.angular.z = w
-        self.cmd_pub.publish(cmd)
+        self._last_cmd.linear.x = v
+        self._last_cmd.angular.z = w
+
+    def _publish_last_cmd(self) -> None:
+        self.cmd_pub.publish(self._last_cmd)
 
 
 def main() -> None:
@@ -66,8 +69,8 @@ def main() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        stop = Twist()
-        node.cmd_pub.publish(stop)
+        node._last_cmd = Twist()  # zero velocity on shutdown
+        node.cmd_pub.publish(node._last_cmd)
         node.destroy_node()
         rclpy.shutdown()
 
