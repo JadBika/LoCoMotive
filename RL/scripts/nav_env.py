@@ -59,7 +59,7 @@ class LocobotNavEnv(gym.Env):
         )
         obs = self._parse_state(raw_obs)
         self.prev_dist = np.linalg.norm(obs[:2])
-        return obs, info
+        return obs, {}
 
     def step(self, action):
         self.current_step += 1
@@ -77,7 +77,7 @@ class LocobotNavEnv(gym.Env):
         if self.current_step >= self.max_steps:
             truncated = True
 
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, {}
 
     def close(self):
         self.base_env.close()
