@@ -55,7 +55,7 @@ class LocobotNavEnv(gym.Env):
     def reset(self, **kwargs):
         self.current_step = 0
         raw_obs, info = self.base_env.reset(
-            options={"joint_positions": [0, 0, 0, 0, 0, 0]}
+            options={"joint_positions": [0.0, -1.1642915, 1.57079637, 0.00460194, 0.50928164, 0.13805827]}
         )
         obs = self._parse_state(raw_obs)
         self.prev_dist = np.linalg.norm(obs[:2])
