@@ -21,7 +21,8 @@ model = SAC(
     buffer_size=50_000,
     batch_size=256,
     learning_starts=200,
-    tensorboard_log="./tb_logs/"
+    tensorboard_log="./tb_logs/",
+    device = "cpu"
 )
 
 print("Starting training...")
