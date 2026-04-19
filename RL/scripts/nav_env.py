@@ -5,6 +5,8 @@ import numpy as np
 class LocobotNavEnv(gym.Env):
     metadata = {'render_modes': []}
 
+    HOME_ARM = [0.0, -1.1642915, 1.57079637, 0.00460194, 0.50928164, 0.13805827]
+
     def __init__(self, rs_address='192.168.50.194:50051'):
         super().__init__()
         
@@ -32,7 +34,6 @@ class LocobotNavEnv(gym.Env):
         )
 
     def _parse_state(self, raw_obs):
-        # raw_obs is a plain numpy array of shape (23,)
         odom = raw_obs[16:23]
         x, y = odom[0], odom[1]
         qz, qw = odom[5], odom[6]
@@ -54,19 +55,17 @@ class LocobotNavEnv(gym.Env):
 
     def reset(self, **kwargs):
         self.current_step = 0
-        print("Resetting with home joint positions...")
-        raw_obs, info = self.base_env.reset(
-            options={"joint_positions": [0.0, -1.1642915, 1.57079637, 0.00460194, 0.50928164, 0.13805827]}
+        raw_obs, _ = self.base_env.reset(
+            options={"joint_positions": self.HOME_ARM}
         )
-        print("Arm positions after reset:", raw_obs[0:6])
         obs = self._parse_state(raw_obs)
         self.prev_dist = np.linalg.norm(obs[:2])
         return obs, {}
 
     def step(self, action):
         self.current_step += 1
-        full_action = np.array([0, 0, 0, 0, 0, 0, action[0], action[1]])
-        raw_obs, _, terminated, truncated, info = self.base_env.step(full_action)
+        full_action = np.array(self.HOME_ARM + [action[0], action[1]])
+        raw_obs, _, terminated, truncated, _ = self.base_env.step(full_action)
 
         obs = self._parse_state(raw_obs)
         reward, dist = self._compute_reward(obs, self.prev_dist)
