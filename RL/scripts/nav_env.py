@@ -65,6 +65,7 @@ class LocobotNavEnv(gym.Env):
     def step(self, action):
         self.current_step += 1
         full_action = np.array(self.HOME_ARM + [action[0], action[1]])
+        print("Full action being sent:", full_action)
         raw_obs, _, terminated, truncated, _ = self.base_env.step(full_action)
 
         obs = self._parse_state(raw_obs)
