@@ -3,28 +3,30 @@ import robo_gym
 import numpy as np
 
 class LocobotNavEnv(gym.Env):
+    metadata = {'render_modes': []}
+
     def __init__(self, rs_address='192.168.50.194:50051'):
+        super().__init__()
+        
         self.base_env = gym.make(
             'EmptyEnvironmentInterbotixRRob-v0',
             rs_address=rs_address,
             gui=True,
             robot_model='locobot_wx250s',
             with_camera=False
-        )
+        ).unwrapped
 
         self.goal = np.array([1.5, 0.0])
         self.goal_threshold = 0.15
         self.max_steps = 200
         self.current_step = 0
 
-        # [linear_x, angular_z]
         self.action_space = gym.spaces.Box(
-            low=np.array([-0.3, -1.0]),
-            high=np.array([0.5, 1.0]),
+            low=np.array([-0.3, -1.0], dtype=np.float32),
+            high=np.array([0.5, 1.0], dtype=np.float32),
             dtype=np.float32
         )
 
-        # [dx, dy, heading, linear_vel, angular_vel]
         self.observation_space = gym.spaces.Box(
             low=-np.inf, high=np.inf, shape=(5,), dtype=np.float32
         )
