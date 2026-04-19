@@ -32,12 +32,12 @@ class LocobotNavEnv(gym.Env):
         )
 
     def _parse_state(self, raw_obs):
-        state = raw_obs['state']
-        odom = state[16:23]
+        # raw_obs is a plain numpy array of shape (23,)
+        odom = raw_obs[16:23]
         x, y = odom[0], odom[1]
         qz, qw = odom[5], odom[6]
         heading = 2 * np.arctan2(qz, qw)
-        wheel_vel = state[14:16]
+        wheel_vel = raw_obs[14:16]
         linear_vel = np.mean(wheel_vel)
         angular_vel = wheel_vel[1] - wheel_vel[0]
         dx = self.goal[0] - x
