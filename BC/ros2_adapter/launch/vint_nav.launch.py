@@ -13,6 +13,7 @@ def generate_launch_description() -> LaunchDescription:
     vint_repo_root = LaunchConfiguration("vint_repo_root")
     topomap_images_dir = LaunchConfiguration("topomap_images_dir")
     model_name = LaunchConfiguration("model_name")
+    checkpoint_path = LaunchConfiguration("checkpoint_path")
     max_v = LaunchConfiguration("max_v")
     max_w = LaunchConfiguration("max_w")
     k_v = LaunchConfiguration("k_v")
@@ -27,6 +28,7 @@ def generate_launch_description() -> LaunchDescription:
             DeclareLaunchArgument("vint_repo_root", default_value=""),
             DeclareLaunchArgument("topomap_images_dir", default_value=""),
             DeclareLaunchArgument("model_name", default_value="vint"),
+            DeclareLaunchArgument("checkpoint_path", default_value=""),
             DeclareLaunchArgument("max_v", default_value="0.46"),
             DeclareLaunchArgument("max_w", default_value="1.0"),
             DeclareLaunchArgument("k_v", default_value="7.0"),
@@ -41,6 +43,7 @@ def generate_launch_description() -> LaunchDescription:
                         "model_name": model_name,
                         "vint_repo_root": vint_repo_root,
                         "topomap_images_dir": topomap_images_dir,
+                        "checkpoint_path": checkpoint_path,
                         "camera_topic": camera_topic,
                         "odom_topic": odom_topic,
                         "waypoint_topic": waypoint_topic,
