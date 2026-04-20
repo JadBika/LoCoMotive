@@ -4,4 +4,6 @@
 topomaps/
 rosbags/
 processed/
+splits/
 *.pyc
+*.pth
