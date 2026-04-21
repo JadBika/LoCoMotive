@@ -5,5 +5,6 @@ topomaps/
 rosbags/
 processed/
 splits/
+visualnav-transformer/
 *.pyc
 *.pth
