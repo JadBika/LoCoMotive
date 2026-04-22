@@ -71,8 +71,8 @@ class LocobotNavEnv(gym.Env):
         raw_obs, _ = self.base_env.reset(
             options={"joint_positions": self.HOME_ARM}
         )
-        # Set goal relative to starting position
-        odom = raw_obs[16:23]
+        # raw_obs is a dict with 'state' and 'camera' keys
+        odom = raw_obs['state'][16:23]
         self.start_x = odom[0]
         self.start_y = odom[1]
         self.goal = np.array([self.start_x + 1.5, self.start_y])
