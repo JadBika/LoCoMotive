@@ -9,7 +9,7 @@ print("Initial state:", obs['state'])
 print("Distance to goal:", np.linalg.norm(obs['state'][:2]))
 
 for i in range(5):
-    action = env.action_space.say()
+    action = env.action_space.sample()
     obs, reward, terminated, truncated, info = env.step(action)
     print(f"Step {i+1}: reward={reward:.3f}, dist={np.linalg.norm(obs['state'][:2]):.3f}")
     if terminated or truncated:
