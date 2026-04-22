@@ -39,12 +39,13 @@ model = SAC(
     buffer_size=50_000,
     batch_size=256,
     learning_starts=200,
-    device="cpu"
+    device="cpu",
+    tensorboard_log="./tb_logs/"
 )
 
 print("Starting training...")
 model.learn(
-    total_timesteps=50_000,
+    total_timesteps=10_000,
     callback=[checkpoint_cb, reset_cb],
     log_interval=1
 )
