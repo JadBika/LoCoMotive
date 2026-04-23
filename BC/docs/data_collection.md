@@ -19,7 +19,6 @@ export ROS_DOMAIN_ID=20
 ```
 
 **Important:** Do NOT activate conda when running ROS2 scripts.
-Conda uses Python 3.13 which is incompatible with ROS2 Humble (Python 3.10).
 
 ```bash
 conda deactivate   # run this if conda is active
@@ -31,8 +30,7 @@ conda deactivate   # run this if conda is active
 
 ```bash
 # Terminal 1
-source /opt/ros/humble/setup.bash
-export ROS_DOMAIN_ID=20
+source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
 ros2 launch interbotix_xslocobot_control xslocobot_control.launch.py \
   robot_model:=locobot_wx250s \
   use_base:=true \
@@ -46,8 +44,7 @@ ros2 launch interbotix_xslocobot_control xslocobot_control.launch.py \
 
 ```bash
 # Terminal 2
-source /opt/ros/humble/setup.bash
-export ROS_DOMAIN_ID=20
+source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
 ros2 launch interbotix_xslocobot_joy xslocobot_joy.launch.py \
   robot_model:=locobot_wx250s \
   launch_driver:=false
@@ -57,8 +54,7 @@ ros2 launch interbotix_xslocobot_joy xslocobot_joy.launch.py \
 
 ```bash
 # Terminal 3
-source /opt/ros/humble/setup.bash
-export ROS_DOMAIN_ID=20
+source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
 ros2 launch realsense2_camera rs_launch.py
 ```
 
@@ -69,94 +65,98 @@ ros2 topic hz /camera/camera/color/image_raw
 # Expected: ~30 Hz
 ```
 
-## Step 4 — Record Topomap
+---
+
+## Topomap Collection
+
+Topomaps are the goal-image sequences used during navigation. Record one topomap per route by driving the robot along the route.
 
 ```bash
-# Terminal 4
-source /opt/ros/humble/setup.bash
-export ROS_DOMAIN_ID=20
-cd ~/LoCoMotive/BC/scripts
-python3 create_topomap_ros2.py \
+# Terminal 4 — run from BC/ directory
+source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
+cd ~/LoCoMotive/BC
+python3 scripts/create_topomap_ros2.py \
   --dir <topomap_name> \
   --dt 1.0 \
   --camera-topic /camera/camera/color/image_raw
 ```
 
-- `--dir`: name of the topomap (e.g. `lab_route_01`)
-- `--dt`: seconds between saved images (1.0 = one image per second)
+- `--dir`: name of the topomap (e.g. `eval_route_01`) — **must be unique per route**
+- `--dt`: seconds between saved images (1.0 = one image per second at walking speed)
 - Drive the robot through the desired route while the script is running
 - Press **Ctrl+C** to stop recording
 
+> **Common mistake:** Forgetting `--camera-topic /camera/camera/color/image_raw` causes empty topomaps (default topic is `/usb_cam/image_raw` which is not used).
+
 Images are saved to:
-
 ```
-~/LoCoMotive/BC/data/topomaps/<topomap_name>/
+~/LoCoMotive/BC/data/topomaps/<topomap_name>/0.png, 1.png, ...
 ```
 
-### Collecting Multiple Topomaps
-
-**Each route must use a different `--dir` name.** Using the same name will delete the previous topomap.
+### Verify after recording
 
 ```bash
-# First route (e.g. hallway A → B)
-python3 create_topomap_ros2.py --dir lab_route_01 --dt 1.0 \
-  --camera-topic /camera/camera/color/image_raw
-
-# Second route (e.g. hallway B → C)
-python3 create_topomap_ros2.py --dir lab_route_02 --dt 1.0 \
-  --camera-topic /camera/camera/color/image_raw
-
-# Third route (e.g. loop around lab)
-python3 create_topomap_ros2.py --dir lab_route_03 --dt 1.0 \
-  --camera-topic /camera/camera/color/image_raw
-```
-
-This creates separate folders:
-```
-topomaps/images/lab_route_01/   ← 0.png, 1.png, ...
-topomaps/images/lab_route_02/   ← 0.png, 1.png, ...
-topomaps/images/lab_route_03/   ← 0.png, 1.png, ...
+ls ~/LoCoMotive/BC/data/topomaps/<topomap_name>/ | wc -l
+# Should be > 0 (typically 10–40 nodes for a lab route)
 ```
 
 ---
 
-## Verify Collected Data
+## Demo Bag Collection (for fine-tuning)
+
+Record demonstrations by driving the robot manually along a route while recording all sensor data.
 
 ```bash
-# Count nodes
-ls ~/LoCoMotive/BC/data/topomaps/<topomap_name>/ | wc -l
-
-# Copy to lab desktop for visual inspection
-# On white:
-scp -r locobot@192.168.50.194:~/LoCoMotive/BC/visualnav-transformer/deployment/topomaps/images/<topomap_name> \
-  ~/<topomap_name>
-eog ~/<topomap_name>/
+# Terminal 4
+source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
+cd ~/LoCoMotive/BC/data/raw/rosbags
+ros2 bag record \
+  /camera/camera/color/image_raw \
+  /locobot/mobile_base/odom \
+  -o demo_route_01
 ```
 
-What to check:
+- Name convention: `demo_route_<NN>` for training demos, `eval_route_<NN>` for evaluation bags
+- Record 5+ demos per route for fine-tuning
+- Press **Ctrl+C** to stop
 
-- Images numbered `0.png, 1.png, 2.png ...` sequentially
-- Visually continuous — no black frames or large jumps
-- ~10–30 nodes for a short corridor route
+---
+
+## Transfer Data to Mac (for fine-tuning)
+
+From Mac (white or personal laptop):
+
+```bash
+# Transfer all rosbags
+scp -r locobot@192.168.50.194:~/LoCoMotive/BC/data/raw/rosbags/ \
+    "BC/data/raw/"
+
+# Transfer topomaps
+scp -r locobot@192.168.50.194:~/LoCoMotive/BC/data/topomaps/ \
+    "BC/data/"
+```
+
+---
+
+## Collected Topomaps
+
+| Name            | Nodes | Date       | Purpose      |
+|-----------------|-------|------------|--------------|
+| `lab_route_01`  | 22    | 2026-04-15 | Training nav test |
+| `lab_route_02`  | ?     | 2026-04-15 | Training nav test |
+| `lab_route_03`  | ?     | 2026-04-15 | Training nav test |
+| `lab_route_04`  | ?     | 2026-04-15 | Training nav test |
+| `eval_route_01` | ?     | 2026-04-21 | Evaluation   |
+| `eval_route_02` | ?     | 2026-04-21 | Evaluation   |
+| `eval_route_03` | ?     | 2026-04-21 | Evaluation   |
+| `eval_route_04` | ?     | 2026-04-21 | Evaluation   |
 
 ---
 
 ## Active Topic Names (ford-pinto)
 
 | Topic          | Value                            |
-| -------------- | -------------------------------- |
+|----------------|----------------------------------|
 | Camera (color) | `/camera/camera/color/image_raw` |
 | Odometry       | `/locobot/mobile_base/odom`      |
 | Cmd vel        | `/locobot/mobile_base/cmd_vel`   |
-
----
-
-## Collected Topomaps
-
-| Name           | Nodes | Date       | Notes            |
-| -------------- | ----- | ---------- | ---------------- |
-| `lab_route_01` | 22    | 2026-04-15 | First test route |
-| `lab_route_02` | ?     | 2026-04-15 |                  |
-| `lab_route_03` | ?     | 2026-04-15 |                  |
-| `lab_route_04` | ?     | 2026-04-15 |                  |
-| `lab_route_05` | ?     | 2026-04-15 |                  |
