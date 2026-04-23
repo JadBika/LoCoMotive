@@ -6,5 +6,6 @@ rosbags/
 processed/
 splits/
 visualnav-transformer/
+verif/
 *.pyc
 *.pth
