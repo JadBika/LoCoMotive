@@ -59,7 +59,7 @@ else:
 
 print("Starting training...")
 model.learn(
-    total_timesteps=20_000,
+    total_timesteps=10_000,
     callback=[checkpoint_cb, reset_cb],
     log_interval=1,
     reset_num_timesteps=False
