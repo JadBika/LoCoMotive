@@ -8,13 +8,33 @@ class ResetCallback(BaseCallback):
     def __init__(self, verbose=0):
         super().__init__(verbose)
         self.episode_count = 0
+        self.successes = 0
+        self.total_episodes = 0
+        self.total_dist = 0.0
 
     def _on_step(self) -> bool:
         dones = self.locals.get('dones', [False])
         if any(dones):
             self.episode_count += 1
+            self.total_episodes += 1
+
+            infos = self.locals.get('infos', [{}])
+            for info in infos:
+                if info.get('goal_reached', False):
+                    self.successes += 1
+                self.total_dist += info.get('final_dist', 0.0)
+
+            success_rate = self.successes / self.total_episodes
+            avg_dist = self.total_dist / self.total_episodes
+
+            self.logger.record('custom/success_rate', success_rate)
+            self.logger.record('custom/total_episodes', self.total_episodes)
+            self.logger.record('custom/avg_final_distance', avg_dist)
+
             print(f"\n{'='*50}")
             print(f"Episode {self.episode_count} finished.")
+            print(f"Success rate: {success_rate:.2%}")
+            print(f"Avg distance to goal: {avg_dist:.3f}m")
             print(f"Place robot back at start position.")
             print(f"{'='*50}")
             input("Press Enter when ready to continue...")

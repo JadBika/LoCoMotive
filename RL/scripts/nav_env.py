@@ -109,8 +109,10 @@ class LocobotNavEnv(gym.Env):
         reward, dist, too_far = self._compute_reward(obs, self.prev_dist)
         self.prev_dist = dist
 
+        goal_reached = False
         if dist < self.goal_threshold:
             terminated = True
+            goal_reached = True
             print("Goal reached!")
 
         if too_far:
@@ -121,7 +123,10 @@ class LocobotNavEnv(gym.Env):
         if self.current_step >= self.max_steps:
             truncated = True
 
-        return obs, reward, terminated, truncated, {}
+        return obs, reward, terminated, truncated, {
+            'goal_reached': goal_reached,
+            'final_dist': dist
+        }
 
     def close(self):
         self.base_env.close()
