@@ -3,7 +3,7 @@ from nav_env import LocobotNavEnv
 import numpy as np
 
 env = LocobotNavEnv()
-model = SAC.load("locobot_nav_final", env=env)
+model = SAC.load("checkpoints/locobot_nav_5000_steps", env=env)
 
 obs, _ = env.reset()
 total_reward = 0
