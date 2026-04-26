@@ -97,7 +97,6 @@ ax.set_title("Action Loss (50 epochs)")
 ax.legend()
 ax.grid(True, alpha=0.3)
 
-fig.suptitle("ViNT Fine-tuning on LoCoBot Demo Data (20 demos, 4 routes)", fontsize=11)
 fig.tight_layout()
 out = OUT_DIR / "loss_curves.png"
 fig.savefig(out, dpi=150, bbox_inches="tight")
@@ -127,7 +126,7 @@ split_map.update({n: "eval" for n in eval_names})
 colors = {"train": "#2196F3", "val": "#FF9800", "eval": "#4CAF50"}
 labels_added = set()
 
-fig, ax = plt.subplots(figsize=(10, 8))
+fig, ax = plt.subplots(figsize=(10, 5))
 
 for pkl_path in sorted(DATA_DIR.glob("*/traj_data.pkl")):
     traj_name = pkl_path.parent.name
@@ -141,16 +140,19 @@ for pkl_path in sorted(DATA_DIR.glob("*/traj_data.pkl")):
         continue
 
     label = split if split not in labels_added else None
-    ax.plot(pos[:, 0], pos[:, 1], color=color, linewidth=1.2,
+    ax.plot(pos[:, 1], pos[:, 0], color=color, linewidth=1.2,
             alpha=0.7, label=label)
-    ax.plot(pos[0, 0], pos[0, 1], "o", color=color, markersize=4)
+    ax.plot(pos[0, 1], pos[0, 0], "o", color=color, markersize=4)
     labels_added.add(split)
 
-ax.set_xlabel("X (m)")
-ax.set_ylabel("Y (m)")
-ax.set_title("Collected Demo Trajectories (top-down view)")
+ax.set_xlabel("Y (m)")
+ax.set_ylabel("X (m)")
 ax.legend(title="Split")
 ax.set_aspect("equal")
+ax.invert_xaxis()
+ax.annotate("Note: positions are in per-session odometry frames;\ntrajectories across sessions may appear spatially offset.",
+            xy=(0.01, 0.01), xycoords="axes fraction", fontsize=7, color="gray",
+            va="bottom")
 ax.grid(True, alpha=0.3)
 fig.tight_layout()
 
