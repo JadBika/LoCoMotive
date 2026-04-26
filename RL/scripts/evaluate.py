@@ -8,7 +8,7 @@ model = SAC.load("checkpoints/locobot_nav_1000_steps", env=env, device="cpu")
 obs, _ = env.reset()
 total_reward = 0
 
-for _ in range(500):
+for _ in range(100):
     action, _ = model.predict(obs, deterministic=True)
     obs, reward, terminated, truncated, info = env.step(action)
     total_reward += reward
