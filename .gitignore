@@ -1,1 +1,11 @@
 .DS_Store
+
+# min
+topomaps/
+rosbags/
+processed/
+splits/
+visualnav-transformer/
+verif/
+*.pyc
+*.pth
