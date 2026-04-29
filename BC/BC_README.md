@@ -11,6 +11,12 @@ The full pipeline covers:
 
 ---
 
+## Note on Data
+
+The `data/` folder (raw rosbags, processed trajectories, topomaps) is **not tracked in this repository** due to its large size.
+
+---
+
 ## Folder Structure
 
 ```
