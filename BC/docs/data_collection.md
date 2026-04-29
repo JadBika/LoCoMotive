@@ -89,6 +89,7 @@ python3 scripts/create_topomap_ros2.py \
 > **Common mistake:** Forgetting `--camera-topic /camera/camera/color/image_raw` causes empty topomaps (default topic is `/usb_cam/image_raw` which is not used).
 
 Images are saved to:
+
 ```
 ~/LoCoMotive/BC/data/topomaps/<topomap_name>/0.png, 1.png, ...
 ```
@@ -122,17 +123,17 @@ ros2 bag record \
 
 ---
 
-## Transfer Data to Mac (for fine-tuning)
+## Transfer Data (for fine-tuning)
 
-From Mac (white or personal laptop):
+From white or personal laptop:
 
 ```bash
 # Transfer all rosbags
-scp -r locobot@192.168.50.194:~/LoCoMotive/BC/data/raw/rosbags/ \
+scp -r locobot@robotIP:~/LoCoMotive/BC/data/raw/rosbags/ \
     "BC/data/raw/"
 
 # Transfer topomaps
-scp -r locobot@192.168.50.194:~/LoCoMotive/BC/data/topomaps/ \
+scp -r locobot@robotIP:~/LoCoMotive/BC/data/topomaps/ \
     "BC/data/"
 ```
 
@@ -140,23 +141,23 @@ scp -r locobot@192.168.50.194:~/LoCoMotive/BC/data/topomaps/ \
 
 ## Collected Topomaps
 
-| Name            | Nodes | Date       | Purpose      |
-|-----------------|-------|------------|--------------|
+| Name            | Nodes | Date       | Purpose           |
+| --------------- | ----- | ---------- | ----------------- |
 | `lab_route_01`  | 22    | 2026-04-15 | Training nav test |
-| `lab_route_02`  | ?     | 2026-04-15 | Training nav test |
-| `lab_route_03`  | ?     | 2026-04-15 | Training nav test |
-| `lab_route_04`  | ?     | 2026-04-15 | Training nav test |
-| `eval_route_01` | ?     | 2026-04-21 | Evaluation   |
-| `eval_route_02` | ?     | 2026-04-21 | Evaluation   |
-| `eval_route_03` | ?     | 2026-04-21 | Evaluation   |
-| `eval_route_04` | ?     | 2026-04-21 | Evaluation   |
+| `lab_route_02`  |       | 2026-04-15 | Training nav test |
+| `lab_route_03`  |       | 2026-04-15 | Training nav test |
+| `lab_route_04`  |       | 2026-04-15 | Training nav test |
+| `eval_route_01` |       | 2026-04-21 | Evaluation        |
+| `eval_route_02` |       | 2026-04-21 | Evaluation        |
+| `eval_route_03` |       | 2026-04-21 | Evaluation        |
+| `eval_route_04` |       | 2026-04-21 | Evaluation        |
 
 ---
 
 ## Active Topic Names (ford-pinto)
 
 | Topic          | Value                            |
-|----------------|----------------------------------|
+| -------------- | -------------------------------- |
 | Camera (color) | `/camera/camera/color/image_raw` |
 | Odometry       | `/locobot/mobile_base/odom`      |
 | Cmd vel        | `/locobot/mobile_base/cmd_vel`   |
