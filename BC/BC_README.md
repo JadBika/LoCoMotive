@@ -113,6 +113,16 @@ ros2 launch ros2_adapter vint_nav.launch.py \
   checkpoint_path:=~/LoCoMotive/BC/checkpoints/finetuned/vint_finetuned_best.pth
 ```
 
+### Install Python dependencies (Mac)
+
+```bash
+conda activate vint_train
+pip install -r BC/requirements.txt
+
+# Warmup LR scheduler (not on PyPI)
+pip install git+https://github.com/ildoonet/pytorch-gradual-warmup-lr.git
+```
+
 ### Fine-tune on new data (Mac)
 
 ```bash
