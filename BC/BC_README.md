@@ -3,6 +3,7 @@
 This module implements **topological map navigation** on a real LoCoBot (`ford-pinto`, locobot_wx250s) using the pretrained [ViNT](https://general-navigation-models.github.io) model, with fine-tuning on locally collected demonstration data.
 
 The full pipeline covers:
+
 1. Deploying the pretrained ViNT model on the robot via a custom ROS2 adapter
 2. Collecting topomaps and demonstration bags in the lab
 3. Processing bags and fine-tuning the model on a local Mac (Apple Silicon)
@@ -113,7 +114,7 @@ ros2 launch ros2_adapter vint_nav.launch.py \
   checkpoint_path:=~/LoCoMotive/BC/checkpoints/finetuned/vint_finetuned_best.pth
 ```
 
-### Install Python dependencies (Mac)
+### Install Python dependencies
 
 ```bash
 conda activate vint_train
@@ -123,7 +124,7 @@ pip install -r BC/requirements.txt
 pip install git+https://github.com/ildoonet/pytorch-gradual-warmup-lr.git
 ```
 
-### Fine-tune on new data (Mac)
+### Fine-tune on new data
 
 ```bash
 conda activate vint_train
@@ -140,15 +141,15 @@ See [docs/model_testing.md](docs/model_testing.md) and [docs/data_collection.md]
 ### Papers
 
 - **ViNT: A Foundation Model for Visual Navigation**  
-  Shah et al., *CoRL 2023*  
+  Shah et al., _CoRL 2023_  
   https://arxiv.org/abs/2306.14846
 
 - **GNM: A General Navigation Model to Drive Any Robot**  
-  Shah et al., *ICRA 2023*  
+  Shah et al., _ICRA 2023_  
   https://arxiv.org/abs/2210.03370
 
 - **ViNG: Learning Open-World Navigation with Visual Goals**  
-  Shah et al., *ICRA 2021* — negative mining strategy used in ViNT_Dataset  
+  Shah et al., _ICRA 2021_ — negative mining strategy used in ViNT_Dataset  
   https://arxiv.org/abs/2012.09812
 
 ### Repositories
