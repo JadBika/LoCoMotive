@@ -9,14 +9,15 @@ Compare pretrained vs fine-tuned ViNT on the same topomap route.
 ### 1 — Transfer project to robot (from Mac)
 
 ```bash
-scp -r ~/LoCoMotive/BC locobot@192.168.50.194:~/LoCoMotive/
+scp -r ~/LoCoMotive/BC locobot@robotIP:~/LoCoMotive/
 ```
 
 Or update individual files only:
+
 ```bash
 scp BC/ros2_adapter/ros2_adapter/vint_infer_node.py \
     BC/ros2_adapter/ros2_adapter/pd_controller_node.py \
-    locobot@192.168.50.194:~/LoCoMotive/BC/ros2_adapter/ros2_adapter/
+    locobot@robotIP:~/LoCoMotive/BC/ros2_adapter/ros2_adapter/
 ```
 
 ### 2 — Install Python dependencies on robot
@@ -24,7 +25,7 @@ scp BC/ros2_adapter/ros2_adapter/vint_infer_node.py \
 SSH into robot, install with **system pip3** (not conda):
 
 ```bash
-ssh locobot@192.168.50.194
+ssh locobot@robotIP
 conda deactivate
 
 pip3 install --user torch torchvision --index-url https://download.pytorch.org/whl/cpu
@@ -48,10 +49,10 @@ source install/setup.bash
 ### 4 — Transfer fine-tuned checkpoint to robot (from Mac)
 
 ```bash
-ssh locobot@192.168.50.194 "mkdir -p ~/LoCoMotive/BC/checkpoints/finetuned"
+ssh locobot@robotIP "mkdir -p ~/LoCoMotive/BC/checkpoints/finetuned"
 
 scp "BC/checkpoints/finetuned/vint_finetuned_best.pth" \
-    locobot@192.168.50.194:~/LoCoMotive/BC/checkpoints/finetuned/
+    locobot@robotIP:~/LoCoMotive/BC/checkpoints/finetuned/
 ```
 
 ---
@@ -87,6 +88,7 @@ Verify: `ros2 topic hz /camera/camera/color/image_raw` → ~30 Hz
 ### Terminal 4 — ViNT inference
 
 Source the adapter first (required every session):
+
 ```bash
 conda deactivate
 source /opt/ros/humble/setup.bash && export ROS_DOMAIN_ID=20
@@ -141,13 +143,13 @@ ros2 topic hz /locobot/mobile_base/cmd_vel    # expected ~50 Hz
 
 ### Symptoms and fixes
 
-| Symptom | Likely cause | Fix |
-|---------|-------------|-----|
-| Robot goes straight on all routes | `/waypoint` y ≈ 0 always | Check robot start position matches topomap start; verify topomap has turns |
-| Robot doesn't move | `/waypoint` not publishing | Check inference node started correctly; check camera topic |
-| Package not found error | ros2_adapter not sourced | Run `cd ~/LoCoMotive/BC/ros2_adapter && source install/setup.bash` |
-| Empty topomap | Wrong camera topic used | Re-record with `--camera-topic /camera/camera/color/image_raw` |
-| Robot too fast / too slow | PD gains | Adjust `max_v` and `k_v` in launch command |
+| Symptom                           | Likely cause               | Fix                                                                        |
+| --------------------------------- | -------------------------- | -------------------------------------------------------------------------- |
+| Robot goes straight on all routes | `/waypoint` y ≈ 0 always   | Check robot start position matches topomap start; verify topomap has turns |
+| Robot doesn't move                | `/waypoint` not publishing | Check inference node started correctly; check camera topic                 |
+| Package not found error           | ros2_adapter not sourced   | Run `cd ~/LoCoMotive/BC/ros2_adapter && source install/setup.bash`         |
+| Empty topomap                     | Wrong camera topic used    | Re-record with `--camera-topic /camera/camera/color/image_raw`             |
+| Robot too fast / too slow         | PD gains                   | Adjust `max_v` and `k_v` in launch command                                 |
 
 ---
 
@@ -155,11 +157,11 @@ ros2 topic hz /locobot/mobile_base/cmd_vel    # expected ~50 Hz
 
 For each trial, record in `BC/results/metrics/`:
 
-| Field | Value |
-|-------|-------|
-| `model` | `pretrained` or `finetuned` |
-| `topomap` | e.g. `eval_route_01` |
-| `success` | 1 / 0 |
-| `collision` | 1 / 0 |
-| `time_sec` | seconds to complete route |
-| `notes` | observations |
+| Field       | Value                       |
+| ----------- | --------------------------- |
+| `model`     | `pretrained` or `finetuned` |
+| `topomap`   | e.g. `eval_route_01`        |
+| `success`   | 1 / 0                       |
+| `collision` | 1 / 0                       |
+| `time_sec`  | seconds to complete route   |
+| `notes`     | observations                |
