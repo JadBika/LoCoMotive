@@ -37,6 +37,5 @@ LoCoMotive/
 | OS            | Ubuntu 22.04                           |
 | ROS           | ROS2 Humble                            |
 | ROS_DOMAIN_ID | 20                                     |
-| Robot IP      | `192.168.50.194`                       |
 | Training (BC) | Google Colab, Mac (Apple Silicon, MPS) |
 | Training (RL) | White PC (Docker, robo-gym)            |
